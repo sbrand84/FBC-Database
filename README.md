@@ -22,6 +22,9 @@ build step, no server code.
 2. In the repo: **Settings → Pages → Deploy from branch** → pick this
    branch → `/ (root)` → **Save**.
 3. GitHub gives you a URL like `https://yourname.github.io/FBC-Database/`.
+   (The very first deploy is kicked off by a push to the branch — if the
+   site 404s right after enabling Pages, push any small change and it'll
+   trigger the build.)
 
 Any other static host (Netlify, Vercel, Cloudflare Pages, etc.) works the
 same way. You can also skip hosting entirely and just copy `index.html` and
