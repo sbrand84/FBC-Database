@@ -222,29 +222,6 @@
   }
   #statusMsg.error { color: var(--error); font-weight: 600; }
 
-  .fallback-box {
-    margin-top: 14px;
-    padding: 14px;
-    border-radius: 10px;
-    background: #fdf3f2;
-    border: 1px solid #f3d2ce;
-    display: none;
-  }
-  .fallback-box.show { display: block; }
-  .fallback-box p { margin: 0 0 10px; font-size: 14px; color: var(--text); }
-  .fallback-box a, .fallback-box button {
-    display: inline-block;
-    margin: 4px 6px 0 0;
-    padding: 10px 16px;
-    border-radius: 8px;
-    background: var(--navy);
-    color: #fff;
-    text-decoration: none;
-    font-size: 14px;
-    border: none;
-    font-weight: 600;
-  }
-
   /* Confirmation screen */
   #confirmScreen {
     display: none;
@@ -262,15 +239,22 @@
   }
   #confirmScreen h2 { margin: 0 0 8px; }
   #confirmScreen p { color: var(--muted); margin: 0 0 26px; }
-  #newOrderBtn {
+  #confirmScreen .btn-row {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 320px;
+    margin: 0 auto;
+  }
+  #newOrderBtn, #shareOneBtn {
     padding: 16px 28px;
     border-radius: 12px;
-    background: var(--navy);
-    color: #fff;
     border: none;
     font-size: 17px;
     font-weight: 700;
   }
+  #newOrderBtn { background: var(--navy); color: #fff; }
+  #shareOneBtn { background: #fff; color: var(--navy); border: 1.5px solid var(--navy); }
 
   .footer-link {
     text-align: center;
@@ -280,9 +264,10 @@
     background: none;
     border: none;
     color: var(--muted);
-    font-size: 13px;
+    font-size: 13.5px;
     text-decoration: underline;
     padding: 10px;
+    font-weight: 600;
   }
 
   /* Order log modal */
@@ -322,6 +307,18 @@
     border-radius: 8px;
     border: none;
     font-weight: 600;
+  }
+  #logPanel .share-row {
+    margin-top: 14px;
+  }
+  #logPanel .share-row button {
+    width: 100%;
+    padding: 14px;
+    border-radius: 8px;
+    border: none;
+    font-weight: 700;
+    background: var(--accent);
+    color: #1c2233;
   }
   #closeLogBtn { background: var(--navy); color: #fff; }
   #clearLogBtn { background: #f3f3f3; color: var(--error); }
@@ -412,30 +409,30 @@
     <button type="submit" id="sendBtn">Send Order</button>
     <div id="statusMsg"></div>
 
-    <div class="fallback-box" id="fallbackBox">
-      <p>The order couldn't be emailed automatically (no internet connection or a setup issue). Nothing was lost — try again, or use one of these backups:</p>
-      <a href="#" id="mailtoFallback">Open in Mail App</a>
-      <button type="button" id="copyFallback">Copy Order Details</button>
-    </div>
-
     <div class="footer-link">
-      <button type="button" id="viewLogBtn">View recent orders on this iPad</button>
+      <button type="button" id="viewLogBtn">View / Export Orders (<span id="orderCount">0</span>)</button>
     </div>
   </form>
 
   <div id="confirmScreen">
     <div class="check">&#10003;</div>
-    <h2>Order Sent!</h2>
-    <p id="confirmText">Thanks, we received your order.</p>
-    <button id="newOrderBtn">Place Another Order</button>
+    <h2>Order Saved!</h2>
+    <p id="confirmText">The order has been saved on this iPad.</p>
+    <div class="btn-row">
+      <button id="shareOneBtn">Share This Order</button>
+      <button id="newOrderBtn">Place Another Order</button>
+    </div>
   </div>
 
 </main>
 
 <div id="logOverlay">
   <div id="logPanel">
-    <h3>Recent Orders (saved on this iPad)</h3>
+    <h3>Orders (saved on this iPad)</h3>
     <div id="logList"></div>
+    <div class="share-row">
+      <button id="shareAllBtn">Share / Export All Orders</button>
+    </div>
     <div class="close-row">
       <button id="clearLogBtn">Clear Log</button>
       <button id="closeLogBtn">Close</button>
@@ -443,34 +440,20 @@
   </div>
 </div>
 
-<!-- EmailJS lets this page send email directly, with no server of your own. -->
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script>
-/* =========================================================================
-   CONFIGURATION — fill these in with your own EmailJS account details.
-   See README.md for step-by-step setup instructions.
-   ========================================================================= */
-const EMAILJS_CONFIG = {
-  publicKey:  "YOUR_PUBLIC_KEY",   // EmailJS "Public Key"
-  serviceId:  "YOUR_SERVICE_ID",   // EmailJS "Service ID"
-  templateId: "YOUR_TEMPLATE_ID"   // EmailJS "Template ID"
-};
-const ORDER_EMAIL_TO = "scott@scottbrandministries.com";
-/* ========================================================================= */
-
-const isConfigured = !Object.values(EMAILJS_CONFIG).some(v => v.startsWith("YOUR_"));
-if (isConfigured && window.emailjs) {
-  emailjs.init({ publicKey: EMAILJS_CONFIG.publicKey });
-}
+/* This app keeps every order saved locally on the iPad (browser storage) —
+   there is no email, server, or third-party account involved. Use the
+   "View / Export Orders" button to see them or share them off the iPad
+   (AirDrop, Messages, Mail, Notes, Files, etc.) whenever you like. */
 
 const form = document.getElementById("orderForm");
 const designGrid = document.getElementById("designGrid");
 const sendBtn = document.getElementById("sendBtn");
 const statusMsg = document.getElementById("statusMsg");
-const fallbackBox = document.getElementById("fallbackBox");
 const confirmScreen = document.getElementById("confirmScreen");
 const confirmText = document.getElementById("confirmText");
 const qtyInput = document.getElementById("qty");
+const orderCountEl = document.getElementById("orderCount");
 
 // Highlight the selected design card
 designGrid.addEventListener("change", () => {
@@ -544,36 +527,52 @@ function orderSummaryText(order) {
     + `Date: ${order.orderDate}`;
 }
 
+function getLog() {
+  try {
+    return JSON.parse(localStorage.getItem("sbm_orders") || "[]");
+  } catch (e) {
+    return [];
+  }
+}
+
 function saveToLocalLog(order) {
   try {
-    const log = JSON.parse(localStorage.getItem("sbm_orders") || "[]");
+    const log = getLog();
     log.unshift(order);
-    localStorage.setItem("sbm_orders", JSON.stringify(log.slice(0, 200)));
-  } catch (e) { /* localStorage unavailable — safe to ignore */ }
+    localStorage.setItem("sbm_orders", JSON.stringify(log.slice(0, 500)));
+  } catch (e) {
+    alert("Warning: this order could not be saved on the iPad (storage may be full or disabled).");
+  }
+  updateOrderCount();
 }
 
-function showFallback(order) {
-  const summary = orderSummaryText(order);
-  const subject = encodeURIComponent(`Shirt Order - ${order.customerName}`);
-  const body = encodeURIComponent(summary);
-  document.getElementById("mailtoFallback").href =
-    `mailto:${ORDER_EMAIL_TO}?subject=${subject}&body=${body}`;
-  document.getElementById("copyFallback").onclick = async () => {
+function updateOrderCount() {
+  orderCountEl.textContent = getLog().length;
+}
+
+async function shareText(text, title) {
+  if (navigator.share) {
     try {
-      await navigator.clipboard.writeText(summary);
-      statusMsg.textContent = "Order details copied to clipboard.";
+      await navigator.share({ title, text });
+      return;
     } catch (e) {
-      alert(summary);
+      if (e.name === "AbortError") return; // user cancelled the share sheet
     }
-  };
-  fallbackBox.classList.add("show");
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    alert("Sharing isn't available here, so this was copied to the clipboard instead:\n\n" + text);
+  } catch (e) {
+    alert(text);
+  }
 }
 
-form.addEventListener("submit", async (e) => {
+let lastOrder = null;
+
+form.addEventListener("submit", (e) => {
   e.preventDefault();
   statusMsg.textContent = "";
   statusMsg.classList.remove("error");
-  fallbackBox.classList.remove("show");
 
   if (!validate()) {
     statusMsg.textContent = "Please fill in the highlighted fields.";
@@ -582,56 +581,25 @@ form.addEventListener("submit", async (e) => {
   }
 
   const order = buildOrder();
-  sendBtn.disabled = true;
-  sendBtn.textContent = "Sending...";
-  statusMsg.textContent = "Sending your order...";
+  saveToLocalLog(order);
+  lastOrder = order;
 
-  if (!isConfigured) {
-    sendBtn.disabled = false;
-    sendBtn.textContent = "Send Order";
-    statusMsg.textContent = "This app hasn't been set up to send email yet.";
-    statusMsg.classList.add("error");
-    saveToLocalLog(order);
-    showFallback(order);
-    return;
-  }
+  form.reset();
+  document.querySelectorAll(".design-option").forEach(o => o.classList.remove("selected"));
+  qtyInput.value = 1;
+  confirmText.textContent = `Saved for ${order.customerName}. Use "Share This Order" if you'd like to send it off the iPad right now (text, email, AirDrop, Notes, etc.).`;
+  form.style.display = "none";
+  confirmScreen.style.display = "block";
+});
 
-  try {
-    await emailjs.send(EMAILJS_CONFIG.serviceId, EMAILJS_CONFIG.templateId, {
-      to_email: ORDER_EMAIL_TO,
-      customer_name: order.customerName,
-      phone: order.phone,
-      address: order.address,
-      design: order.design,
-      size: order.size,
-      quantity: order.qty,
-      order_date: order.orderDate
-    });
-
-    saveToLocalLog(order);
-    form.reset();
-    document.querySelectorAll(".design-option").forEach(o => o.classList.remove("selected"));
-    qtyInput.value = 1;
-    confirmText.textContent = `Thanks, ${order.customerName}! We received your order and will be in touch.`;
-    form.style.display = "none";
-    confirmScreen.style.display = "block";
-  } catch (err) {
-    console.error("EmailJS send failed:", err);
-    statusMsg.textContent = "Could not send the order automatically.";
-    statusMsg.classList.add("error");
-    saveToLocalLog(order);
-    showFallback(order);
-  } finally {
-    sendBtn.disabled = false;
-    sendBtn.textContent = "Send Order";
-  }
+document.getElementById("shareOneBtn").addEventListener("click", () => {
+  if (lastOrder) shareText(orderSummaryText(lastOrder), "Shirt Order");
 });
 
 document.getElementById("newOrderBtn").addEventListener("click", () => {
   confirmScreen.style.display = "none";
   form.style.display = "block";
   statusMsg.textContent = "";
-  fallbackBox.classList.remove("show");
 });
 
 // Order log viewer
@@ -639,7 +607,7 @@ const logOverlay = document.getElementById("logOverlay");
 const logList = document.getElementById("logList");
 
 document.getElementById("viewLogBtn").addEventListener("click", () => {
-  const log = JSON.parse(localStorage.getItem("sbm_orders") || "[]");
+  const log = getLog();
   logList.innerHTML = log.length
     ? log.map(o => `
         <div class="log-entry">
@@ -651,16 +619,29 @@ document.getElementById("viewLogBtn").addEventListener("click", () => {
   logOverlay.classList.add("show");
 });
 
+document.getElementById("shareAllBtn").addEventListener("click", () => {
+  const log = getLog();
+  if (!log.length) {
+    alert("No orders saved on this iPad yet.");
+    return;
+  }
+  const text = log.slice().reverse().map(orderSummaryText).join("\n\n======================\n\n");
+  shareText(text, `Shirt Orders (${log.length})`);
+});
+
 document.getElementById("closeLogBtn").addEventListener("click", () => {
   logOverlay.classList.remove("show");
 });
 
 document.getElementById("clearLogBtn").addEventListener("click", () => {
-  if (confirm("Clear all locally saved orders on this iPad? This does not affect any emails already sent.")) {
+  if (confirm("Clear all orders saved on this iPad? Make sure you've exported/shared them first — this cannot be undone.")) {
     localStorage.removeItem("sbm_orders");
+    updateOrderCount();
     logOverlay.classList.remove("show");
   }
 });
+
+updateOrderCount();
 </script>
 
 </body>
