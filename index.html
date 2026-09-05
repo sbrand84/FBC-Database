@@ -323,7 +323,7 @@
     max-width: 320px;
     margin: 0 auto;
   }
-  #newOrderBtn, #shareOneBtn, #printSlipBtn {
+  #newOrderBtn, #shareOneBtn {
     padding: 16px 28px;
     border-radius: 12px;
     border: none;
@@ -331,7 +331,7 @@
     font-weight: 700;
   }
   #newOrderBtn { background: var(--navy); color: #fff; }
-  #shareOneBtn, #printSlipBtn { background: #fff; color: var(--navy); border: 1.5px solid var(--navy); }
+  #shareOneBtn { background: #fff; color: var(--navy); border: 1.5px solid var(--navy); }
 
   .footer-link {
     text-align: center;
@@ -561,7 +561,6 @@
     <p id="confirmText">The order has been saved on this iPad.</p>
     <div class="btn-row">
       <button id="shareOneBtn">Email Packing Slip to Scott</button>
-      <button id="printSlipBtn">Print Packing Slip</button>
       <button id="newOrderBtn">Place Another Order</button>
     </div>
   </div>
@@ -605,12 +604,29 @@ const itemsError = document.getElementById("itemsError");
 // ---- Building the current order (a list of {design, size, qty} shirts) ----
 let currentItems = [];
 
+// Some designs run extra sizes beyond the standard lineup
+const BASE_SIZES = ["Medium", "Large", "X-Large", "2X-Large", "3X-Large"];
+const EXTRA_SIZES_BY_DESIGN = {
+  "Heaven to Me (Blue)": ["Small"]
+};
+
+function updateSizeOptions() {
+  const checked = form.querySelector('input[name="design"]:checked');
+  const extra = (checked && EXTRA_SIZES_BY_DESIGN[checked.value]) || [];
+  const sizes = [...extra, ...BASE_SIZES];
+  const current = sizeSelect.value;
+  sizeSelect.innerHTML = `<option value="" disabled>Select a size</option>`
+    + sizes.map(s => `<option value="${s}">${s}</option>`).join("");
+  sizeSelect.value = sizes.includes(current) ? current : "";
+}
+
 // Highlight the selected design card
 designGrid.addEventListener("change", () => {
   document.querySelectorAll(".design-option").forEach(opt => {
     opt.classList.toggle("selected", opt.querySelector("input").checked);
   });
   designGrid.classList.remove("invalid");
+  updateSizeOptions();
 });
 
 const phoneInput = document.getElementById("phone");
@@ -637,7 +653,7 @@ document.getElementById("qtyPlus").addEventListener("click", () => {
 function resetItemBuilder() {
   form.querySelectorAll('input[name="design"]').forEach(r => r.checked = false);
   document.querySelectorAll(".design-option").forEach(o => o.classList.remove("selected"));
-  sizeSelect.value = "";
+  updateSizeOptions();
   qtyInput.value = 1;
 }
 
@@ -792,81 +808,6 @@ function packingSlipText(order) {
     + `========================`;
 }
 
-function packingSlipHTML(order) {
-  const totalQty = order.items.reduce((sum, it) => sum + it.qty, 0);
-  const logoUrl = new URL("assets/sbm-logo.jpg", window.location.href).href;
-  const rows = order.items.map(it => `
-    <tr>
-      <td class="chk">&#9633;</td>
-      <td>${it.design}</td>
-      <td>${it.size}</td>
-      <td class="qty">${it.qty}</td>
-    </tr>`).join("");
-  return `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Packing Slip - ${order.customerName}</title>
-<style>
-  body { font-family: -apple-system, Arial, sans-serif; color: #1c2233; margin: 40px; }
-  .header { display: flex; align-items: center; gap: 14px; border-bottom: 3px solid #1c2b4a; padding-bottom: 14px; }
-  .header img { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; }
-  .header h1 { font-size: 24px; margin: 0; }
-  .addr { color: #444; font-size: 13px; margin: 8px 0 24px; }
-  h2 { font-size: 18px; margin: 20px 0 6px; text-transform: uppercase; letter-spacing: 0.5px; }
-  .meta { color: #666; font-size: 13px; margin-bottom: 16px; }
-  .ship-to { margin-bottom: 20px; line-height: 1.6; }
-  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid #ddd; font-size: 14px; }
-  th { text-transform: uppercase; font-size: 11px; color: #666; letter-spacing: 0.5px; }
-  .chk { width: 28px; font-size: 18px; }
-  .qty { text-align: right; width: 60px; }
-  .total { text-align: right; margin-top: 14px; font-weight: bold; font-size: 15px; }
-  @media print { body { margin: 0.4in; } }
-</style>
-</head>
-<body>
-  <div class="header">
-    <img src="${logoUrl}" alt="Scott Brand Ministries logo">
-    <h1>${BUSINESS_NAME}</h1>
-  </div>
-  <div class="addr">${BUSINESS_ADDRESS}</div>
-  <h2>Packing Slip</h2>
-  <div class="meta">Order Date: ${order.orderDate}</div>
-  <div class="ship-to">
-    <strong>Ship To:</strong><br>
-    ${order.customerName}<br>
-    ${order.street}<br>
-    ${order.city}, ${order.state} ${order.zip}<br>
-    Phone: ${order.phone}<br>
-    Email: ${order.email}
-  </div>
-  <table>
-    <thead><tr><th></th><th>Design</th><th>Size</th><th class="qty">Qty</th></tr></thead>
-    <tbody>${rows}</tbody>
-  </table>
-  <div class="total">Total shirts: ${totalQty}</div>
-</body>
-</html>`;
-}
-
-function printPackingSlip(order) {
-  const win = window.open("", "_blank");
-  if (!win) {
-    alert("Please allow pop-ups on this site to print the packing slip.");
-    return;
-  }
-  win.document.open();
-  win.document.write(packingSlipHTML(order));
-  win.document.close();
-  const triggerPrint = () => { win.focus(); win.print(); };
-  if (win.document.readyState === "complete") {
-    setTimeout(triggerPrint, 200);
-  } else {
-    win.addEventListener("load", () => setTimeout(triggerPrint, 100));
-  }
-}
-
 const ORDER_EMAIL_TO = "scott@scottbrandministries.com";
 
 function getLog() {
@@ -933,7 +874,7 @@ form.addEventListener("submit", (e) => {
   qtyInput.value = 1;
 
   const itemCount = order.items.reduce((sum, it) => sum + it.qty, 0);
-  confirmText.textContent = `Saved for ${order.customerName} (${itemCount} shirt${itemCount > 1 ? "s" : ""}). Email it to ${ORDER_EMAIL_TO}, or print a packing slip right now.`;
+  confirmText.textContent = `Saved for ${order.customerName} (${itemCount} shirt${itemCount > 1 ? "s" : ""}). Tap "Email Packing Slip to Scott" to send it to ${ORDER_EMAIL_TO} now.`;
   form.style.display = "none";
   confirmScreen.style.display = "block";
 });
@@ -943,10 +884,6 @@ document.getElementById("shareOneBtn").addEventListener("click", () => {
   const subject = encodeURIComponent(`Packing Slip - Order for ${lastOrder.customerName}`);
   const body = encodeURIComponent(packingSlipText(lastOrder));
   window.location.href = `mailto:${ORDER_EMAIL_TO}?subject=${subject}&body=${body}`;
-});
-
-document.getElementById("printSlipBtn").addEventListener("click", () => {
-  if (lastOrder) printPackingSlip(lastOrder);
 });
 
 document.getElementById("newOrderBtn").addEventListener("click", () => {
