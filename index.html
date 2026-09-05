@@ -199,6 +199,63 @@
   }
   .design-grid.invalid + #designError { display: block; }
 
+  #addItemBtn {
+    width: 100%;
+    padding: 16px;
+    font-size: 16.5px;
+    font-weight: 700;
+    border: 1.5px dashed var(--navy);
+    border-radius: 12px;
+    background: #fff;
+    color: var(--navy);
+    margin-top: 18px;
+  }
+  #addItemBtn:active { background: #f0f1f5; }
+
+  /* Order items list */
+  #itemsEmpty {
+    color: var(--muted);
+    font-size: 14.5px;
+    margin: 0;
+  }
+  .order-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid #eee;
+  }
+  .order-item:last-child { border-bottom: none; }
+  .order-item .oi-thumb {
+    width: 42px; height: 52px;
+    border-radius: 6px;
+    object-fit: cover;
+    background: #eee;
+    flex-shrink: 0;
+  }
+  .order-item .oi-info { flex: 1; min-width: 0; }
+  .order-item .oi-design { font-weight: 700; font-size: 15px; }
+  .order-item .oi-meta { color: var(--muted); font-size: 13.5px; margin-top: 2px; }
+  .order-item .oi-remove {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: #f3f3f3;
+    color: var(--error);
+    font-size: 18px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  #itemsError {
+    color: var(--error);
+    font-size: 13.5px;
+    margin-top: 10px;
+    display: none;
+  }
+  #itemsList.invalid + #itemsError,
+  #itemsList.invalid ~ #itemsError { display: block; }
+
   #sendBtn {
     width: 100%;
     padding: 18px;
@@ -295,6 +352,7 @@
   }
   .log-entry:last-child { border-bottom: none; }
   .log-entry .when { color: var(--muted); font-size: 12px; }
+  .log-entry .li-item { margin: 2px 0 0 12px; }
   #logPanel .close-row {
     display: flex;
     justify-content: space-between;
@@ -336,38 +394,35 @@
   <form id="orderForm" novalidate>
 
     <div class="card">
-      <h2>Choose a Design</h2>
-      <p class="hint">Tap the shirt you'd like to order.</p>
+      <h2>Add a Shirt</h2>
+      <p class="hint">Pick a design, size, and quantity, then add it to your order. Add as many different shirts as you'd like.</p>
       <div class="design-grid" id="designGrid">
-        <label class="design-option" data-value="Same God (Grey)">
-          <input type="radio" name="design" value="Same God (Grey)" required>
+        <label class="design-option" data-value="Same God (Grey)" data-img="assets/designs/same-god-grey.png">
+          <input type="radio" name="design" value="Same God (Grey)">
           <img src="assets/designs/same-god-grey.png" alt="Same God - grey shirt" loading="lazy">
           <div class="label">Same God<br>(Grey)</div>
         </label>
-        <label class="design-option" data-value="Not What I Was (Mint)">
-          <input type="radio" name="design" value="Not What I Was (Mint)" required>
+        <label class="design-option" data-value="Not What I Was (Mint)" data-img="assets/designs/not-what-i-was-mint.jpg">
+          <input type="radio" name="design" value="Not What I Was (Mint)">
           <img src="assets/designs/not-what-i-was-mint.jpg" alt="Not What I Was - mint shirt" loading="lazy">
           <div class="label">Not What I Was<br>(Mint)</div>
         </label>
-        <label class="design-option" data-value="Heaven to Me (Blue)">
-          <input type="radio" name="design" value="Heaven to Me (Blue)" required>
+        <label class="design-option" data-value="Heaven to Me (Blue)" data-img="assets/designs/heaven-to-me-blue.png">
+          <input type="radio" name="design" value="Heaven to Me (Blue)">
           <img src="assets/designs/heaven-to-me-blue.png" alt="Heaven to Me - blue shirt" loading="lazy">
           <div class="label">Heaven To Me<br>(Blue)</div>
         </label>
-        <label class="design-option" data-value="Make Heaven Crowded (Navy)">
-          <input type="radio" name="design" value="Make Heaven Crowded (Navy)" required>
+        <label class="design-option" data-value="Make Heaven Crowded (Navy)" data-img="assets/designs/make-heaven-crowded-navy.png">
+          <input type="radio" name="design" value="Make Heaven Crowded (Navy)">
           <img src="assets/designs/make-heaven-crowded-navy.png" alt="Make Heaven Crowded - navy shirt" loading="lazy">
           <div class="label">Make Heaven<br>Crowded (Navy)</div>
         </label>
       </div>
       <div id="designError">Please choose a design.</div>
-    </div>
 
-    <div class="card">
-      <h2>Size &amp; Quantity</h2>
-      <div class="field" id="sizeField">
+      <div class="field" id="sizeField" style="margin-top:18px;">
         <label for="size">Size</label>
-        <select id="size" name="size" required>
+        <select id="size" name="size">
           <option value="" disabled selected>Select a size</option>
           <option value="Medium">Medium</option>
           <option value="Large">Large</option>
@@ -381,10 +436,19 @@
         <label for="qty">Quantity</label>
         <div class="qty-row">
           <button type="button" id="qtyMinus" aria-label="Decrease quantity">&minus;</button>
-          <input type="number" id="qty" name="qty" min="1" max="20" value="1" inputmode="numeric" required>
+          <input type="number" id="qty" name="qty" min="1" max="20" value="1" inputmode="numeric">
           <button type="button" id="qtyPlus" aria-label="Increase quantity">&plus;</button>
         </div>
       </div>
+
+      <button type="button" id="addItemBtn">+ Add This Shirt to Order</button>
+    </div>
+
+    <div class="card">
+      <h2>Your Order</h2>
+      <p class="hint" id="itemsHint">No shirts added yet.</p>
+      <div id="itemsList"></div>
+      <div id="itemsError">Please add at least one shirt to your order.</div>
     </div>
 
     <div class="card">
@@ -453,7 +517,14 @@ const statusMsg = document.getElementById("statusMsg");
 const confirmScreen = document.getElementById("confirmScreen");
 const confirmText = document.getElementById("confirmText");
 const qtyInput = document.getElementById("qty");
+const sizeSelect = document.getElementById("size");
 const orderCountEl = document.getElementById("orderCount");
+const itemsList = document.getElementById("itemsList");
+const itemsHint = document.getElementById("itemsHint");
+const itemsError = document.getElementById("itemsError");
+
+// ---- Building the current order (a list of {design, size, qty} shirts) ----
+let currentItems = [];
 
 // Highlight the selected design card
 designGrid.addEventListener("change", () => {
@@ -470,12 +541,43 @@ document.getElementById("qtyPlus").addEventListener("click", () => {
   qtyInput.value = Math.min(20, (parseInt(qtyInput.value, 10) || 1) + 1);
 });
 
-function fieldWrap(id) { return document.getElementById(id); }
+function resetItemBuilder() {
+  form.querySelectorAll('input[name="design"]').forEach(r => r.checked = false);
+  document.querySelectorAll(".design-option").forEach(o => o.classList.remove("selected"));
+  sizeSelect.value = "";
+  qtyInput.value = 1;
+}
 
-function validate() {
+function renderItems() {
+  if (!currentItems.length) {
+    itemsHint.textContent = "No shirts added yet.";
+    itemsList.innerHTML = "";
+    return;
+  }
+  itemsHint.textContent = `${currentItems.length} shirt${currentItems.length > 1 ? "s" : ""} in this order:`;
+  itemsList.innerHTML = currentItems.map((it, i) => `
+    <div class="order-item">
+      <img class="oi-thumb" src="${it.img}" alt="">
+      <div class="oi-info">
+        <div class="oi-design">${it.design}</div>
+        <div class="oi-meta">${it.size} &times; ${it.qty}</div>
+      </div>
+      <button type="button" class="oi-remove" data-idx="${i}" aria-label="Remove this shirt">&times;</button>
+    </div>
+  `).join("");
+}
+
+itemsList.addEventListener("click", (e) => {
+  const btn = e.target.closest(".oi-remove");
+  if (!btn) return;
+  currentItems.splice(parseInt(btn.dataset.idx, 10), 1);
+  renderItems();
+});
+
+document.getElementById("addItemBtn").addEventListener("click", () => {
+  const design = form.querySelector('input[name="design"]:checked');
   let ok = true;
 
-  const design = form.querySelector('input[name="design"]:checked');
   if (!design) {
     designGrid.classList.add("invalid");
     ok = false;
@@ -483,8 +585,42 @@ function validate() {
     designGrid.classList.remove("invalid");
   }
 
+  const sizeField = document.getElementById("sizeField");
+  if (!sizeSelect.value) {
+    sizeField.classList.add("invalid");
+    ok = false;
+  } else {
+    sizeField.classList.remove("invalid");
+  }
+
+  if (!ok) return;
+
+  const option = design.closest(".design-option");
+  currentItems.push({
+    design: design.value,
+    img: option.dataset.img,
+    size: sizeSelect.value,
+    qty: parseInt(qtyInput.value, 10) || 1
+  });
+  renderItems();
+  itemsList.classList.remove("invalid");
+  resetItemBuilder();
+});
+
+// ---- Validation for the rest of the form ----
+function fieldWrap(id) { return document.getElementById(id); }
+
+function validate() {
+  let ok = true;
+
+  if (!currentItems.length) {
+    itemsList.classList.add("invalid");
+    ok = false;
+  } else {
+    itemsList.classList.remove("invalid");
+  }
+
   [
-    ["sizeField", "size"],
     ["nameField", "customerName"],
     ["phoneField", "phone"],
     ["addressField", "address"]
@@ -503,11 +639,8 @@ function validate() {
 }
 
 function buildOrder() {
-  const design = form.querySelector('input[name="design"]:checked');
   return {
-    design: design ? design.value : "",
-    size: document.getElementById("size").value,
-    qty: qtyInput.value,
+    items: currentItems.map(({ design, size, qty }) => ({ design, size, qty })),
     customerName: document.getElementById("customerName").value.trim(),
     phone: document.getElementById("phone").value.trim(),
     address: document.getElementById("address").value.trim(),
@@ -516,11 +649,10 @@ function buildOrder() {
 }
 
 function orderSummaryText(order) {
+  const itemLines = order.items.map(it => `  - ${it.design}, ${it.size} x${it.qty}`).join("\n");
   return `New Shirt Order\n`
     + `----------------------\n`
-    + `Design: ${order.design}\n`
-    + `Size: ${order.size}\n`
-    + `Quantity: ${order.qty}\n`
+    + `${itemLines}\n\n`
     + `Name: ${order.customerName}\n`
     + `Phone: ${order.phone}\n`
     + `Address: ${order.address}\n`
@@ -584,10 +716,14 @@ form.addEventListener("submit", (e) => {
   saveToLocalLog(order);
   lastOrder = order;
 
+  currentItems = [];
+  renderItems();
+  resetItemBuilder();
   form.reset();
-  document.querySelectorAll(".design-option").forEach(o => o.classList.remove("selected"));
   qtyInput.value = 1;
-  confirmText.textContent = `Saved for ${order.customerName}. Use "Share This Order" if you'd like to send it off the iPad right now (text, email, AirDrop, Notes, etc.).`;
+
+  const itemCount = order.items.reduce((sum, it) => sum + it.qty, 0);
+  confirmText.textContent = `Saved for ${order.customerName} (${itemCount} shirt${itemCount > 1 ? "s" : ""}). Use "Share This Order" if you'd like to send it off the iPad right now (text, email, AirDrop, Notes, etc.).`;
   form.style.display = "none";
   confirmScreen.style.display = "block";
 });
@@ -612,8 +748,9 @@ document.getElementById("viewLogBtn").addEventListener("click", () => {
     ? log.map(o => `
         <div class="log-entry">
           <div class="when">${o.orderDate}</div>
-          <div><strong>${o.customerName}</strong> — ${o.design}, ${o.size} x${o.qty}</div>
-          <div>${o.phone} · ${o.address}</div>
+          <div><strong>${o.customerName}</strong> — ${o.phone}</div>
+          <div>${o.address}</div>
+          ${o.items.map(it => `<div class="li-item">• ${it.design}, ${it.size} x${it.qty}</div>`).join("")}
         </div>`).join("")
     : "<p>No orders saved on this iPad yet.</p>";
   logOverlay.classList.add("show");
