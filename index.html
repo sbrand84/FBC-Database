@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Scott Brand Ministries — Order Shirts</title>
+
+<!-- Makes this feel like an app when added to the iPad Home Screen -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Order Shirts">
+<link rel="apple-touch-icon" href="assets/designs/make-heaven-crowded-navy.png">
+
+<style>
+  :root {
+    --navy: #1c2b4a;
+    --navy-dark: #12203a;
+    --accent: #c9a227;
+    --bg: #f4f2ec;
+    --card: #ffffff;
+    --text: #1c2233;
+    --muted: #6b7280;
+    --error: #b3261e;
+    --success: #1e7d3c;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    min-height: 100vh;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  header {
+    background: var(--navy);
+    color: #fff;
+    padding: 28px 20px 22px;
+    text-align: center;
+  }
+  header h1 {
+    margin: 0;
+    font-size: clamp(22px, 3.4vw, 30px);
+    letter-spacing: 0.3px;
+  }
+  header p {
+    margin: 6px 0 0;
+    color: #cfd6e6;
+    font-size: 15px;
+  }
+  main {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 20px 16px 60px;
+  }
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    padding: 22px;
+    margin-bottom: 20px;
+  }
+  .card h2 {
+    margin: 0 0 4px;
+    font-size: 19px;
+  }
+  .card .hint {
+    margin: 0 0 16px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  label {
+    display: block;
+    font-weight: 600;
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+  .field { margin-bottom: 18px; }
+  input[type="text"],
+  input[type="tel"],
+  input[type="number"],
+  textarea,
+  select {
+    width: 100%;
+    font-size: 17px;
+    padding: 14px 14px;
+    border: 1.5px solid #d7d7de;
+    border-radius: 10px;
+    background: #fff;
+    color: var(--text);
+    font-family: inherit;
+  }
+  textarea { resize: vertical; min-height: 70px; }
+  select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%231c2b4a'><path d='M7 10l5 5 5-5z'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 20px;
+    padding-right: 40px;
+  }
+  input:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: var(--navy);
+    box-shadow: 0 0 0 3px rgba(28,43,74,0.15);
+  }
+  .qty-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .qty-row button {
+    width: 48px; height: 48px;
+    border-radius: 10px;
+    border: 1.5px solid #d7d7de;
+    background: #fff;
+    font-size: 22px;
+    color: var(--navy);
+    font-weight: 700;
+  }
+  .qty-row input {
+    text-align: center;
+    max-width: 90px;
+  }
+
+  .design-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+  .design-option {
+    position: relative;
+    border: 2.5px solid #e2e2e8;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fafafa;
+    cursor: pointer;
+    transition: border-color .15s ease, transform .1s ease;
+  }
+  .design-option img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    background: #eee;
+  }
+  .design-option .label {
+    padding: 8px 10px 10px;
+    font-size: 13.5px;
+    font-weight: 600;
+    line-height: 1.25;
+    text-align: center;
+  }
+  .design-option input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .design-option.selected {
+    border-color: var(--navy);
+    box-shadow: 0 0 0 3px rgba(28,43,74,0.15);
+  }
+  .design-option.selected::after {
+    content: "✓";
+    position: absolute;
+    top: 8px; right: 8px;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: var(--navy);
+    color: #fff;
+    font-size: 15px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+  }
+  .design-option:active { transform: scale(0.98); }
+
+  .error-text {
+    color: var(--error);
+    font-size: 13.5px;
+    margin-top: 6px;
+    display: none;
+  }
+  .field.invalid input,
+  .field.invalid textarea,
+  .field.invalid select {
+    border-color: var(--error);
+  }
+  .field.invalid .error-text { display: block; }
+  #designError {
+    color: var(--error);
+    font-size: 13.5px;
+    margin-top: 10px;
+    display: none;
+  }
+  .design-grid.invalid + #designError { display: block; }
+
+  #sendBtn {
+    width: 100%;
+    padding: 18px;
+    font-size: 19px;
+    font-weight: 700;
+    border: none;
+    border-radius: 12px;
+    background: var(--navy);
+    color: #fff;
+    letter-spacing: 0.3px;
+  }
+  #sendBtn:active { background: var(--navy-dark); }
+  #sendBtn:disabled { opacity: 0.6; }
+
+  #statusMsg {
+    text-align: center;
+    font-size: 14.5px;
+    margin-top: 12px;
+    min-height: 20px;
+    color: var(--muted);
+  }
+  #statusMsg.error { color: var(--error); font-weight: 600; }
+
+  .fallback-box {
+    margin-top: 14px;
+    padding: 14px;
+    border-radius: 10px;
+    background: #fdf3f2;
+    border: 1px solid #f3d2ce;
+    display: none;
+  }
+  .fallback-box.show { display: block; }
+  .fallback-box p { margin: 0 0 10px; font-size: 14px; color: var(--text); }
+  .fallback-box a, .fallback-box button {
+    display: inline-block;
+    margin: 4px 6px 0 0;
+    padding: 10px 16px;
+    border-radius: 8px;
+    background: var(--navy);
+    color: #fff;
+    text-decoration: none;
+    font-size: 14px;
+    border: none;
+    font-weight: 600;
+  }
+
+  /* Confirmation screen */
+  #confirmScreen {
+    display: none;
+    text-align: center;
+    padding: 50px 20px;
+  }
+  #confirmScreen .check {
+    width: 78px; height: 78px;
+    border-radius: 50%;
+    background: var(--success);
+    color: #fff;
+    font-size: 40px;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 18px;
+  }
+  #confirmScreen h2 { margin: 0 0 8px; }
+  #confirmScreen p { color: var(--muted); margin: 0 0 26px; }
+  #newOrderBtn {
+    padding: 16px 28px;
+    border-radius: 12px;
+    background: var(--navy);
+    color: #fff;
+    border: none;
+    font-size: 17px;
+    font-weight: 700;
+  }
+
+  .footer-link {
+    text-align: center;
+    margin-top: 6px;
+  }
+  .footer-link button {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 13px;
+    text-decoration: underline;
+    padding: 10px;
+  }
+
+  /* Order log modal */
+  #logOverlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 50;
+    padding: 30px 14px;
+    overflow-y: auto;
+  }
+  #logOverlay.show { display: block; }
+  #logPanel {
+    background: #fff;
+    max-width: 640px;
+    margin: 0 auto;
+    border-radius: 14px;
+    padding: 20px;
+  }
+  #logPanel h3 { margin-top: 0; }
+  .log-entry {
+    border-bottom: 1px solid #eee;
+    padding: 10px 0;
+    font-size: 13.5px;
+  }
+  .log-entry:last-child { border-bottom: none; }
+  .log-entry .when { color: var(--muted); font-size: 12px; }
+  #logPanel .close-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 16px;
+  }
+  #logPanel .close-row button {
+    flex: 1;
+    padding: 12px;
+    border-radius: 8px;
+    border: none;
+    font-weight: 600;
+  }
+  #closeLogBtn { background: var(--navy); color: #fff; }
+  #clearLogBtn { background: #f3f3f3; color: var(--error); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Scott Brand Ministries</h1>
+  <p>Shirt Order Form</p>
+</header>
+
+<main>
+
+  <form id="orderForm" novalidate>
+
+    <div class="card">
+      <h2>Choose a Design</h2>
+      <p class="hint">Tap the shirt you'd like to order.</p>
+      <div class="design-grid" id="designGrid">
+        <label class="design-option" data-value="Same God (Grey)">
+          <input type="radio" name="design" value="Same God (Grey)" required>
+          <img src="assets/designs/same-god-grey.png" alt="Same God - grey shirt" loading="lazy">
+          <div class="label">Same God<br>(Grey)</div>
+        </label>
+        <label class="design-option" data-value="Not What I Was (Mint)">
+          <input type="radio" name="design" value="Not What I Was (Mint)" required>
+          <img src="assets/designs/not-what-i-was-mint.jpg" alt="Not What I Was - mint shirt" loading="lazy">
+          <div class="label">Not What I Was<br>(Mint)</div>
+        </label>
+        <label class="design-option" data-value="Heaven to Me (Blue)">
+          <input type="radio" name="design" value="Heaven to Me (Blue)" required>
+          <img src="assets/designs/heaven-to-me-blue.png" alt="Heaven to Me - blue shirt" loading="lazy">
+          <div class="label">Heaven To Me<br>(Blue)</div>
+        </label>
+        <label class="design-option" data-value="Make Heaven Crowded (Navy)">
+          <input type="radio" name="design" value="Make Heaven Crowded (Navy)" required>
+          <img src="assets/designs/make-heaven-crowded-navy.png" alt="Make Heaven Crowded - navy shirt" loading="lazy">
+          <div class="label">Make Heaven<br>Crowded (Navy)</div>
+        </label>
+      </div>
+      <div id="designError">Please choose a design.</div>
+    </div>
+
+    <div class="card">
+      <h2>Size &amp; Quantity</h2>
+      <div class="field" id="sizeField">
+        <label for="size">Size</label>
+        <select id="size" name="size" required>
+          <option value="" disabled selected>Select a size</option>
+          <option value="Medium">Medium</option>
+          <option value="Large">Large</option>
+          <option value="X-Large">X-Large</option>
+          <option value="2X-Large">2X-Large</option>
+          <option value="3X-Large">3X-Large</option>
+        </select>
+        <div class="error-text">Please select a size.</div>
+      </div>
+      <div class="field" id="qtyField" style="margin-bottom:0;">
+        <label for="qty">Quantity</label>
+        <div class="qty-row">
+          <button type="button" id="qtyMinus" aria-label="Decrease quantity">&minus;</button>
+          <input type="number" id="qty" name="qty" min="1" max="20" value="1" inputmode="numeric" required>
+          <button type="button" id="qtyPlus" aria-label="Increase quantity">&plus;</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Your Information</h2>
+      <div class="field" id="nameField">
+        <label for="customerName">Full Name</label>
+        <input type="text" id="customerName" name="customerName" autocomplete="name" required placeholder="Jane Doe">
+        <div class="error-text">Please enter your name.</div>
+      </div>
+      <div class="field" id="phoneField">
+        <label for="phone">Phone Number</label>
+        <input type="tel" id="phone" name="phone" autocomplete="tel" inputmode="tel" required placeholder="(555) 555-5555">
+        <div class="error-text">Please enter a phone number.</div>
+      </div>
+      <div class="field" id="addressField" style="margin-bottom:0;">
+        <label for="address">Mailing Address</label>
+        <textarea id="address" name="address" autocomplete="street-address" required placeholder="Street, City, State, ZIP"></textarea>
+        <div class="error-text">Please enter your address.</div>
+      </div>
+    </div>
+
+    <button type="submit" id="sendBtn">Send Order</button>
+    <div id="statusMsg"></div>
+
+    <div class="fallback-box" id="fallbackBox">
+      <p>The order couldn't be emailed automatically (no internet connection or a setup issue). Nothing was lost — try again, or use one of these backups:</p>
+      <a href="#" id="mailtoFallback">Open in Mail App</a>
+      <button type="button" id="copyFallback">Copy Order Details</button>
+    </div>
+
+    <div class="footer-link">
+      <button type="button" id="viewLogBtn">View recent orders on this iPad</button>
+    </div>
+  </form>
+
+  <div id="confirmScreen">
+    <div class="check">&#10003;</div>
+    <h2>Order Sent!</h2>
+    <p id="confirmText">Thanks, we received your order.</p>
+    <button id="newOrderBtn">Place Another Order</button>
+  </div>
+
+</main>
+
+<div id="logOverlay">
+  <div id="logPanel">
+    <h3>Recent Orders (saved on this iPad)</h3>
+    <div id="logList"></div>
+    <div class="close-row">
+      <button id="clearLogBtn">Clear Log</button>
+      <button id="closeLogBtn">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- EmailJS lets this page send email directly, with no server of your own. -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+/* =========================================================================
+   CONFIGURATION — fill these in with your own EmailJS account details.
+   See README.md for step-by-step setup instructions.
+   ========================================================================= */
+const EMAILJS_CONFIG = {
+  publicKey:  "YOUR_PUBLIC_KEY",   // EmailJS "Public Key"
+  serviceId:  "YOUR_SERVICE_ID",   // EmailJS "Service ID"
+  templateId: "YOUR_TEMPLATE_ID"   // EmailJS "Template ID"
+};
+const ORDER_EMAIL_TO = "scott@scottbrandministries.com";
+/* ========================================================================= */
+
+const isConfigured = !Object.values(EMAILJS_CONFIG).some(v => v.startsWith("YOUR_"));
+if (isConfigured && window.emailjs) {
+  emailjs.init({ publicKey: EMAILJS_CONFIG.publicKey });
+}
+
+const form = document.getElementById("orderForm");
+const designGrid = document.getElementById("designGrid");
+const sendBtn = document.getElementById("sendBtn");
+const statusMsg = document.getElementById("statusMsg");
+const fallbackBox = document.getElementById("fallbackBox");
+const confirmScreen = document.getElementById("confirmScreen");
+const confirmText = document.getElementById("confirmText");
+const qtyInput = document.getElementById("qty");
+
+// Highlight the selected design card
+designGrid.addEventListener("change", () => {
+  document.querySelectorAll(".design-option").forEach(opt => {
+    opt.classList.toggle("selected", opt.querySelector("input").checked);
+  });
+  designGrid.classList.remove("invalid");
+});
+
+document.getElementById("qtyMinus").addEventListener("click", () => {
+  qtyInput.value = Math.max(1, (parseInt(qtyInput.value, 10) || 1) - 1);
+});
+document.getElementById("qtyPlus").addEventListener("click", () => {
+  qtyInput.value = Math.min(20, (parseInt(qtyInput.value, 10) || 1) + 1);
+});
+
+function fieldWrap(id) { return document.getElementById(id); }
+
+function validate() {
+  let ok = true;
+
+  const design = form.querySelector('input[name="design"]:checked');
+  if (!design) {
+    designGrid.classList.add("invalid");
+    ok = false;
+  } else {
+    designGrid.classList.remove("invalid");
+  }
+
+  [
+    ["sizeField", "size"],
+    ["nameField", "customerName"],
+    ["phoneField", "phone"],
+    ["addressField", "address"]
+  ].forEach(([wrapId, inputId]) => {
+    const wrap = fieldWrap(wrapId);
+    const val = document.getElementById(inputId).value.trim();
+    if (!val) {
+      wrap.classList.add("invalid");
+      ok = false;
+    } else {
+      wrap.classList.remove("invalid");
+    }
+  });
+
+  return ok;
+}
+
+function buildOrder() {
+  const design = form.querySelector('input[name="design"]:checked');
+  return {
+    design: design ? design.value : "",
+    size: document.getElementById("size").value,
+    qty: qtyInput.value,
+    customerName: document.getElementById("customerName").value.trim(),
+    phone: document.getElementById("phone").value.trim(),
+    address: document.getElementById("address").value.trim(),
+    orderDate: new Date().toLocaleString()
+  };
+}
+
+function orderSummaryText(order) {
+  return `New Shirt Order\n`
+    + `----------------------\n`
+    + `Design: ${order.design}\n`
+    + `Size: ${order.size}\n`
+    + `Quantity: ${order.qty}\n`
+    + `Name: ${order.customerName}\n`
+    + `Phone: ${order.phone}\n`
+    + `Address: ${order.address}\n`
+    + `Date: ${order.orderDate}`;
+}
+
+function saveToLocalLog(order) {
+  try {
+    const log = JSON.parse(localStorage.getItem("sbm_orders") || "[]");
+    log.unshift(order);
+    localStorage.setItem("sbm_orders", JSON.stringify(log.slice(0, 200)));
+  } catch (e) { /* localStorage unavailable — safe to ignore */ }
+}
+
+function showFallback(order) {
+  const summary = orderSummaryText(order);
+  const subject = encodeURIComponent(`Shirt Order - ${order.customerName}`);
+  const body = encodeURIComponent(summary);
+  document.getElementById("mailtoFallback").href =
+    `mailto:${ORDER_EMAIL_TO}?subject=${subject}&body=${body}`;
+  document.getElementById("copyFallback").onclick = async () => {
+    try {
+      await navigator.clipboard.writeText(summary);
+      statusMsg.textContent = "Order details copied to clipboard.";
+    } catch (e) {
+      alert(summary);
+    }
+  };
+  fallbackBox.classList.add("show");
+}
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  statusMsg.textContent = "";
+  statusMsg.classList.remove("error");
+  fallbackBox.classList.remove("show");
+
+  if (!validate()) {
+    statusMsg.textContent = "Please fill in the highlighted fields.";
+    statusMsg.classList.add("error");
+    return;
+  }
+
+  const order = buildOrder();
+  sendBtn.disabled = true;
+  sendBtn.textContent = "Sending...";
+  statusMsg.textContent = "Sending your order...";
+
+  if (!isConfigured) {
+    sendBtn.disabled = false;
+    sendBtn.textContent = "Send Order";
+    statusMsg.textContent = "This app hasn't been set up to send email yet.";
+    statusMsg.classList.add("error");
+    saveToLocalLog(order);
+    showFallback(order);
+    return;
+  }
+
+  try {
+    await emailjs.send(EMAILJS_CONFIG.serviceId, EMAILJS_CONFIG.templateId, {
+      to_email: ORDER_EMAIL_TO,
+      customer_name: order.customerName,
+      phone: order.phone,
+      address: order.address,
+      design: order.design,
+      size: order.size,
+      quantity: order.qty,
+      order_date: order.orderDate
+    });
+
+    saveToLocalLog(order);
+    form.reset();
+    document.querySelectorAll(".design-option").forEach(o => o.classList.remove("selected"));
+    qtyInput.value = 1;
+    confirmText.textContent = `Thanks, ${order.customerName}! We received your order and will be in touch.`;
+    form.style.display = "none";
+    confirmScreen.style.display = "block";
+  } catch (err) {
+    console.error("EmailJS send failed:", err);
+    statusMsg.textContent = "Could not send the order automatically.";
+    statusMsg.classList.add("error");
+    saveToLocalLog(order);
+    showFallback(order);
+  } finally {
+    sendBtn.disabled = false;
+    sendBtn.textContent = "Send Order";
+  }
+});
+
+document.getElementById("newOrderBtn").addEventListener("click", () => {
+  confirmScreen.style.display = "none";
+  form.style.display = "block";
+  statusMsg.textContent = "";
+  fallbackBox.classList.remove("show");
+});
+
+// Order log viewer
+const logOverlay = document.getElementById("logOverlay");
+const logList = document.getElementById("logList");
+
+document.getElementById("viewLogBtn").addEventListener("click", () => {
+  const log = JSON.parse(localStorage.getItem("sbm_orders") || "[]");
+  logList.innerHTML = log.length
+    ? log.map(o => `
+        <div class="log-entry">
+          <div class="when">${o.orderDate}</div>
+          <div><strong>${o.customerName}</strong> — ${o.design}, ${o.size} x${o.qty}</div>
+          <div>${o.phone} · ${o.address}</div>
+        </div>`).join("")
+    : "<p>No orders saved on this iPad yet.</p>";
+  logOverlay.classList.add("show");
+});
+
+document.getElementById("closeLogBtn").addEventListener("click", () => {
+  logOverlay.classList.remove("show");
+});
+
+document.getElementById("clearLogBtn").addEventListener("click", () => {
+  if (confirm("Clear all locally saved orders on this iPad? This does not affect any emails already sent.")) {
+    localStorage.removeItem("sbm_orders");
+    logOverlay.classList.remove("show");
+  }
+});
+</script>
+
+</body>
+</html>
