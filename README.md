@@ -4,13 +4,15 @@ A single-page web app for taking shirt orders in person on an iPad. Customers
 pick a design, size, and quantity, enter their name/phone/address, and tap
 **Send Order**.
 
-**There is no email, server, or third-party account involved.** Every order
-is saved directly on the iPad (in the browser's storage) the moment Send is
-tapped — it works even with no Wi-Fi at all. Whenever you want to get orders
-off the iPad, open **View / Export Orders** and tap **Share / Export All
-Orders**: this opens the iPad's normal Share menu, so you can send the whole
-list to yourself by text, Mail, AirDrop to a laptop, save to Notes or Files,
-etc. — whatever you prefer, whenever you want, no automatic sending required.
+**There is no server or third-party account involved.** Every order is saved
+directly on the iPad (in the browser's storage) the moment Send is tapped —
+it works even with no Wi-Fi at all. On the confirmation screen, tapping
+**Email Packing Slip to Scott** opens the iPad's Mail app, pre-filled and
+addressed to `scott@scottbrandministries.com`, with the order formatted as a
+packing slip (checkboxes next to each item) — just tap Send in Mail. Every
+order is also kept in an **Order History** log on the iPad, where each order
+can be marked **Unfulfilled**/**Fulfilled** and saved, and the whole log can
+be exported at once via the Share menu.
 
 ## 1. Get the files onto something you can host
 
@@ -46,16 +48,24 @@ just this app during an event.
 
 ## 3. Getting your orders
 
-Tap **View / Export Orders** at the bottom of the form any time to:
-- See every order saved on that iPad (most recent first)
+Right after an order is submitted, tap **Email Packing Slip to Scott** on the
+confirmation screen — it opens Mail, addressed to
+`scott@scottbrandministries.com`, with the order already written up as a
+packing slip. Tap Send in Mail and it's on its way. (This needs a Mail
+account already signed in on the iPad — any account works, since the
+*recipient* is always `scott@scottbrandministries.com` regardless of which
+account sends it.)
+
+Tap **View / Export Orders** at the bottom of the form any time to open
+**Order History**, where you can:
+- See every order saved on that iPad (most recent first), with a status pill
+- Change an order's dropdown to **Unfulfilled**/**Fulfilled** and tap **Save**
+  next to it to track which orders still need to be packed
 - Tap **Share / Export All Orders** to send the full list off the iPad —
   text it to yourself, email it, AirDrop it to a computer, save it to
   Notes/Files, whatever the Share menu offers
 - **Clear Log** once you've exported, to start fresh (this can't be undone,
   so make sure you've shared/exported first)
-
-Right after submitting a single order, there's also a **Share This Order**
-button if you want to send just that one order somewhere immediately.
 
 > **Note:** Orders live in that iPad's Safari storage only. They are not
 > backed up anywhere else, and could be lost if someone clears Safari's
@@ -75,8 +85,13 @@ button if you want to send just that one order somewhere immediately.
 
 - The form validates that every field is filled in and a design is
   selected before allowing submission.
-- On **Send Order**, the order is written to the iPad's local browser
-  storage (`localStorage`) — nothing is sent over the network.
-- The **View / Export Orders** panel reads that same storage to list every
-  order, and uses the iPad's built-in Share sheet (`navigator.share`) to
-  hand the data off to whatever app you choose.
+- On **Send Order**, the order (with a generated ID and "Unfulfilled"
+  status) is written to the iPad's local browser storage (`localStorage`).
+- **Email Packing Slip to Scott** builds a `mailto:` link with the order
+  formatted as a packing slip and navigates to it, which hands off to Mail —
+  no network request happens on this page itself.
+- The **Order History** panel reads that same storage to list every order.
+  Changing an order's status and tapping **Save** updates that one order's
+  record in storage. **Share / Export All Orders** uses the iPad's built-in
+  Share sheet (`navigator.share`) to hand the whole log off to whatever app
+  you choose.

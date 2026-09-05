@@ -399,6 +399,40 @@
   }
   #closeLogBtn { background: var(--navy); color: #fff; }
   #clearLogBtn { background: #f3f3f3; color: var(--error); }
+
+  .status-pill {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-left: 8px;
+  }
+  .status-pill.Unfulfilled { background: #fdecec; color: var(--error); }
+  .status-pill.Fulfilled { background: #e6f4ea; color: var(--success); }
+  .status-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .status-row select {
+    flex: 1;
+    padding: 8px 32px 8px 10px;
+    font-size: 14px;
+    background-position: right 10px center;
+    background-size: 16px;
+  }
+  .status-row .status-save {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: none;
+    background: var(--navy);
+    color: #fff;
+    font-weight: 700;
+    font-size: 14px;
+  }
 </style>
 </head>
 <body>
@@ -520,7 +554,7 @@
     <h2>Order Saved!</h2>
     <p id="confirmText">The order has been saved on this iPad.</p>
     <div class="btn-row">
-      <button id="shareOneBtn">Share This Order</button>
+      <button id="shareOneBtn">Email Packing Slip to Scott</button>
       <button id="newOrderBtn">Place Another Order</button>
     </div>
   </div>
@@ -529,7 +563,7 @@
 
 <div id="logOverlay">
   <div id="logPanel">
-    <h3>Orders (saved on this iPad)</h3>
+    <h3>Order History</h3>
     <div id="logList"></div>
     <div class="share-row">
       <button id="shareAllBtn">Share / Export All Orders</button>
@@ -542,10 +576,11 @@
 </div>
 
 <script>
-/* This app keeps every order saved locally on the iPad (browser storage) —
-   there is no email, server, or third-party account involved. Use the
-   "View / Export Orders" button to see them or share them off the iPad
-   (AirDrop, Messages, Mail, Notes, Files, etc.) whenever you like. */
+/* Every order is saved locally on the iPad (browser storage) — no server
+   or third-party account involved. "Email Packing Slip to Scott" opens
+   the iPad's Mail app pre-filled to scott@scottbrandministries.com; the
+   "View / Export Orders" log lets you mark orders fulfilled and share
+   the whole log off the iPad (AirDrop, Messages, Mail, Notes, etc.). */
 
 const form = document.getElementById("orderForm");
 const designGrid = document.getElementById("designGrid");
@@ -678,12 +713,18 @@ function validate() {
   return ok;
 }
 
+function makeOrderId() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 function buildOrder() {
   const street = document.getElementById("street").value.trim();
   const city = document.getElementById("city").value.trim();
   const state = document.getElementById("state").value.trim();
   const zip = document.getElementById("zip").value.trim();
   return {
+    id: makeOrderId(),
+    status: "Unfulfilled",
     items: currentItems.map(({ design, size, qty }) => ({ design, size, qty })),
     customerName: document.getElementById("customerName").value.trim(),
     phone: document.getElementById("phone").value.trim(),
@@ -703,6 +744,26 @@ function orderSummaryText(order) {
     + `Address: ${order.address}\n`
     + `Date: ${order.orderDate}`;
 }
+
+function packingSlipText(order) {
+  const totalQty = order.items.reduce((sum, it) => sum + it.qty, 0);
+  const itemLines = order.items.map(it => `  [ ] ${it.design} — ${it.size} x${it.qty}`).join("\n");
+  return `PACKING SLIP\n`
+    + `Scott Brand Ministries\n`
+    + `========================\n\n`
+    + `Order Date: ${order.orderDate}\n\n`
+    + `SHIP TO:\n`
+    + `${order.customerName}\n`
+    + `${order.street}\n`
+    + `${order.city}, ${order.state} ${order.zip}\n`
+    + `Phone: ${order.phone}\n\n`
+    + `ITEMS:\n`
+    + `${itemLines}\n\n`
+    + `Total shirts: ${totalQty}\n`
+    + `========================`;
+}
+
+const ORDER_EMAIL_TO = "scott@scottbrandministries.com";
 
 function getLog() {
   try {
@@ -768,13 +829,16 @@ form.addEventListener("submit", (e) => {
   qtyInput.value = 1;
 
   const itemCount = order.items.reduce((sum, it) => sum + it.qty, 0);
-  confirmText.textContent = `Saved for ${order.customerName} (${itemCount} shirt${itemCount > 1 ? "s" : ""}). Use "Share This Order" if you'd like to send it off the iPad right now (text, email, AirDrop, Notes, etc.).`;
+  confirmText.textContent = `Saved for ${order.customerName} (${itemCount} shirt${itemCount > 1 ? "s" : ""}). Tap "Email Packing Slip to Scott" to send it to ${ORDER_EMAIL_TO} now.`;
   form.style.display = "none";
   confirmScreen.style.display = "block";
 });
 
 document.getElementById("shareOneBtn").addEventListener("click", () => {
-  if (lastOrder) shareText(orderSummaryText(lastOrder), "Shirt Order");
+  if (!lastOrder) return;
+  const subject = encodeURIComponent(`Packing Slip - Order for ${lastOrder.customerName}`);
+  const body = encodeURIComponent(packingSlipText(lastOrder));
+  window.location.href = `mailto:${ORDER_EMAIL_TO}?subject=${subject}&body=${body}`;
 });
 
 document.getElementById("newOrderBtn").addEventListener("click", () => {
@@ -787,18 +851,50 @@ document.getElementById("newOrderBtn").addEventListener("click", () => {
 const logOverlay = document.getElementById("logOverlay");
 const logList = document.getElementById("logList");
 
-document.getElementById("viewLogBtn").addEventListener("click", () => {
+function renderLog() {
   const log = getLog();
   logList.innerHTML = log.length
-    ? log.map(o => `
-        <div class="log-entry">
-          <div class="when">${o.orderDate}</div>
+    ? log.map(o => {
+        const status = o.status || "Unfulfilled";
+        return `
+        <div class="log-entry" data-id="${o.id || ""}">
+          <div class="when">${o.orderDate} <span class="status-pill ${status}">${status}</span></div>
           <div><strong>${o.customerName}</strong> — ${o.phone}</div>
           <div>${o.address}</div>
           ${o.items.map(it => `<div class="li-item">• ${it.design}, ${it.size} x${it.qty}</div>`).join("")}
-        </div>`).join("")
+          <div class="status-row">
+            <select class="status-select">
+              <option value="Unfulfilled" ${status === "Unfulfilled" ? "selected" : ""}>Unfulfilled</option>
+              <option value="Fulfilled" ${status === "Fulfilled" ? "selected" : ""}>Fulfilled</option>
+            </select>
+            <button type="button" class="status-save">Save</button>
+          </div>
+        </div>`;
+      }).join("")
     : "<p>No orders saved on this iPad yet.</p>";
+}
+
+document.getElementById("viewLogBtn").addEventListener("click", () => {
+  renderLog();
   logOverlay.classList.add("show");
+});
+
+logList.addEventListener("click", (e) => {
+  const btn = e.target.closest(".status-save");
+  if (!btn) return;
+  const entry = btn.closest(".log-entry");
+  const id = entry.dataset.id;
+  const status = entry.querySelector(".status-select").value;
+  const log = getLog();
+  const idx = log.findIndex(o => o.id === id);
+  if (idx !== -1) {
+    log[idx].status = status;
+    localStorage.setItem("sbm_orders", JSON.stringify(log));
+    entry.querySelector(".status-pill").textContent = status;
+    entry.querySelector(".status-pill").className = `status-pill ${status}`;
+  }
+  btn.textContent = "Saved!";
+  setTimeout(() => { btn.textContent = "Save"; }, 1200);
 });
 
 document.getElementById("shareAllBtn").addEventListener("click", () => {
