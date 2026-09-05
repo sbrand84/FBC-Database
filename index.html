@@ -517,6 +517,11 @@
         <input type="tel" id="phone" name="phone" autocomplete="tel" inputmode="tel" required placeholder="(555) 555-5555">
         <div class="error-text">Please enter a phone number.</div>
       </div>
+      <div class="field" id="emailField">
+        <label for="email">Email Address</label>
+        <input type="email" id="email" name="email" autocomplete="email" inputmode="email" required placeholder="jane@example.com">
+        <div class="error-text">Please enter an email address.</div>
+      </div>
       <div class="field" id="streetField">
         <label for="street">Street Address</label>
         <input type="text" id="street" name="street" autocomplete="address-line1" required placeholder="123 Main St">
@@ -709,6 +714,7 @@ function validate() {
   [
     ["nameField", "customerName"],
     ["phoneField", "phone"],
+    ["emailField", "email"],
     ["streetField", "street"],
     ["cityField", "city"],
     ["stateField", "state"],
@@ -742,6 +748,7 @@ function buildOrder() {
     items: currentItems.map(({ design, size, qty }) => ({ design, size, qty })),
     customerName: document.getElementById("customerName").value.trim(),
     phone: document.getElementById("phone").value.trim(),
+    email: document.getElementById("email").value.trim(),
     street, city, state, zip,
     address: `${street}, ${city}, ${state} ${zip}`,
     orderDate: new Date().toLocaleString()
@@ -755,6 +762,7 @@ function orderSummaryText(order) {
     + `${itemLines}\n\n`
     + `Name: ${order.customerName}\n`
     + `Phone: ${order.phone}\n`
+    + `Email: ${order.email}\n`
     + `Address: ${order.address}\n`
     + `Date: ${order.orderDate}`;
 }
@@ -770,7 +778,8 @@ function packingSlipText(order) {
     + `${order.customerName}\n`
     + `${order.street}\n`
     + `${order.city}, ${order.state} ${order.zip}\n`
-    + `Phone: ${order.phone}\n\n`
+    + `Phone: ${order.phone}\n`
+    + `Email: ${order.email}\n\n`
     + `ITEMS:\n`
     + `${itemLines}\n\n`
     + `Total shirts: ${totalQty}\n`
@@ -874,6 +883,7 @@ function renderLog() {
         <div class="log-entry" data-id="${o.id || ""}">
           <div class="when">${o.orderDate} <span class="status-pill ${status}">${status}</span></div>
           <div><strong>${o.customerName}</strong> — ${o.phone}</div>
+          <div>${o.email}</div>
           <div>${o.address}</div>
           ${o.items.map(it => `<div class="li-item">• ${it.design}, ${it.size} x${it.qty}</div>`).join("")}
           <div class="status-row">
